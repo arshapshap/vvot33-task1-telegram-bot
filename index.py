@@ -58,8 +58,39 @@ def recognize_text(photo_id):
     if not image_url:
         return BAD_PHOTO_MESSAGE
     image_base64 = get_image_base64(image_url)
-    return """1. Файловые системы: Метод выделения дискового пространства "Индексные узлы".
-2. Управление памятью: Принцип локальности."""
+    if not image_base64:
+        return BAD_PHOTO_MESSAGE
+
+    try:
+        headers = {
+            "Authorization": f"Api-Key {API_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        body = {
+            "languageCodes": ["*"],
+            "model": "page",
+            "content": image_base64
+        }
+
+        response = requests.post(
+            "https://ocr.api.cloud.yandex.net/ocr/v1/recognizeText",
+            headers=headers,
+            json=body
+        )
+        response.raise_for_status()
+
+        result = response.json()
+        recognized_text = result["result"]["textAnnotation"]["fullText"]
+
+        return recognized_text if recognized_text else BAD_PHOTO_MESSAGE
+
+    except requests.exceptions.RequestException as e:
+        print(f"OCR API request error: {e}")
+        return BAD_PHOTO_MESSAGE
+    except (KeyError, IndexError) as e:
+        print(f"Invalid OCR API response: {e}")
+        return BAD_PHOTO_MESSAGE
 
 
 def find_answer(text):
