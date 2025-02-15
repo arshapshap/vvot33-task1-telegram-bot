@@ -1,11 +1,14 @@
 import json
 import os
+from pathlib import Path
 import requests
 import base64
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 API_KEY = os.getenv("API_KEY")
 FOLDER_ID = os.getenv("FOLDER_ID")
+BUCKET_NAME = os.getenv("BUCKET_NAME")
+BUCKET_KEY = os.getenv("BUCKET_KEY")
 
 START_MESSAGE = """Я помогу подготовить ответ на экзаменационный вопрос по дисциплине "Операционные системы".
 Пришлите мне фотографию с вопросом или наберите его текстом."""
@@ -14,6 +17,11 @@ TOO_MANY_PHOTOS_MESSAGE = """Я могу обработать только од�
 BAD_PHOTO_MESSAGE = """Я не могу обработать эту фотографию."""
 UNKNOWN_REQUEST_MESSAGE = """Я могу обработать только текстовое сообщение или фотографию."""
 
+
+def get_gpt_instructions():
+    with open(Path("/function/storage", BUCKET_NAME, BUCKET_KEY), "r") as file:
+        content = file.read()
+    return content
 
 def get_image_base64(url):
     try:
@@ -55,9 +63,8 @@ def recognize_text(photo_id):
 
 
 def find_answer(text):
-    prompt = """Сгенерируй структурированный ответ на экзаменационный вопрос по операционным системам. Ответ должен быть полным, точным и написанным на русском языке. Не давай ответы на посторонние вопросы, не связанные с операционными системами."""
-
-    full_prompt = f"{prompt}\nВопрос: {text}\nОтвет:"
+    instructions = get_gpt_instructions()
+    full_prompt = f"{instructions}\nВопрос: {text}\nОтвет:"
 
     try:
         headers = {
